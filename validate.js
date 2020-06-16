@@ -1,1 +1,1 @@
-alert("WELCOME TO SOFTPRO");
+alert("WELCOME");
