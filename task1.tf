@@ -125,7 +125,11 @@ provisioner "remote-exec" {
 output "myos_ip1" {
   value = aws_instance.task_os.public_ip
 }
-
+resource "null_resource" "nullremoteaccess" {
+  depends_on=[
+    null_resource.partition
+  ]
+}
 resource "aws_s3_bucket" "task1bucket1" {
   bucket = "task1bucket1"
   acl    = "public-read"
@@ -175,8 +179,3 @@ viewer_certificate {
   }
 }
 
-resource "null_resource" "nullremoteaccess" {
-  depends_on=[
-    null_resource.partition
-  ]
-}
