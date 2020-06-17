@@ -47,6 +47,76 @@ resource "aws_key_pair" "task_keypair"{
       public_key = tls_private_key.task_keypair.public_key_openssh
 }
 
+resource "aws_s3_bucket" "task1bucket1" {
+  bucket = "task1bucket1"
+  acl    = "public-read"
+  versioning {
+    enabled = true
+  }
+  tags = {
+    Name        = "task1bucket1"
+    Environment = "Personal"
+  }
+}
+
+resource "null_resource" "local-me"  {
+	depends_on = [aws_s3_bucket.task1bucket1,]
+	provisioner "local-exec" {
+		command = "git clone https://github.com/ashwani7273/cloud_task1.git"
+  	}
+}
+
+
+
+resource "aws_s3_bucket_object" "file_upload1" {
+	depends_on = [aws_s3_bucket.task1bucket1 , null_resource.local-me]
+	bucket = aws_s3_bucket.task1bucket1.id
+    key = "vimal_sir.jpg"    
+	  source = "E:/NIIT & SPI & LW/Hybrid Multi Cloud/Task 1/vimal_sir.jpg"
+    acl = "public-read"
+}
+
+output "Image" {
+  value = aws_s3_bucket_object.file_upload1
+}
+
+
+resource "aws_cloudfront_distribution" "s3_distribution" {
+  depends_on = [aws_s3_bucket.task1bucket1,null_resource.local-me]
+          enabled = true
+          is_ipv6_enabled = true
+
+   origin {
+    domain_name = "${aws_s3_bucket.task1bucket1.bucket_regional_domain_name}"
+    origin_id   = "${aws_s3_bucket.task1bucket1.id}"
+     }
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "${aws_s3_bucket.task1bucket1.id}"
+   
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+
+  viewer_protocol_policy = "allow-all"
+    min_ttl                = 0
+    default_ttl            = 7200
+    max_ttl                = 86400
+  }
+viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+}
+
 resource "aws_instance" "task_os" {
      ami = "ami-0447a12f28fddb066"
      instance_type = "t2.micro"
@@ -130,52 +200,3 @@ resource "null_resource" "nullremoteaccess" {
     null_resource.partition
   ]
 }
-resource "aws_s3_bucket" "task1bucket1" {
-  bucket = "task1bucket1"
-  acl    = "public-read"
-  versioning {
-    enabled = true
-  }
-  tags = {
-    Name        = "task1bucket1"
-    Environment = "Personal"
-  }
-}
-
-
-resource "aws_cloudfront_distribution" "s3_distribution" {
-          enabled = true
-          is_ipv6_enabled = true
-          default_root_object = "first.html"
-
-   origin {
-    domain_name = "${aws_s3_bucket.task1bucket1.bucket_regional_domain_name}"
-    origin_id   = "${aws_s3_bucket.task1bucket1.id}"
-     }
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD"]
-    target_origin_id = "${aws_s3_bucket.task1bucket1.id}"
-   
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-
-  viewer_protocol_policy = "allow-all"
-    min_ttl                = 0
-    default_ttl            = 7200
-    max_ttl                = 86400
-  }
-viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-}
-
